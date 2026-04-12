@@ -1,169 +1,1139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flipova - Modern Design System for React Native</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Flipova Dev — Outils & Ressources pour développeurs</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy: #0D0D5E;
+            --navy-mid: #1A1A8C;
+            --indigo: #2929C9;
+            --indigo-light: #4444E0;
+            --accent: #5555FF;
+            --accent-pale: #EEEEFF;
+            --white: #FFFFFF;
+            --off-white: #F7F7FB;
+            --muted: #6B6B9A;
+            --border: #E2E2F0;
+            --text: #0D0D5E;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--white);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HEADER ─────────────────────────────────────── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            background: var(--navy);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-mark svg { display: block; }
+
+        .logo-wordmark {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            background: var(--accent-pale);
+            padding: 2px 7px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        nav { display: flex; align-items: center; gap: 32px; }
+
+        nav a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color .2s;
+        }
+
+        nav a:hover { color: var(--navy); }
+
+        .btn-nav {
+            background: var(--navy);
+            color: var(--white) !important;
+            padding: 9px 20px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background .2s, transform .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav:hover { background: var(--indigo-light) !important; transform: translateY(-1px); }
+
+        /* ── HERO ────────────────────────────────────────── */
+        .hero {
+            padding: 100px 40px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-pale);
+            color: var(--indigo);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 100px;
+            margin-bottom: 24px;
+        }
+
+        .hero-eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .hero h1 {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            color: var(--navy);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            color: var(--indigo-light);
+        }
+
+        .hero p {
+            font-size: 17px;
+            line-height: 1.75;
+            color: var(--muted);
+            margin-bottom: 40px;
+            max-width: 460px;
+        }
+
+        .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+
+        .btn-primary {
+            background: var(--navy);
+            color: var(--white);
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background .2s, transform .15s, box-shadow .2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--indigo-light);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(13,13,94,0.18);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--navy);
+            padding: 13px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid var(--border);
+            transition: border-color .2s, transform .15s;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--navy);
+            transform: translateY(-2px);
+        }
+
+        /* Hero visual */
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-card {
+            background: var(--off-white);
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .hero-card-inner {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .code-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .code-line:last-child { margin-bottom: 0; }
+
+        .code-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-pale);
+            border: 2px solid var(--accent);
+            flex-shrink: 0;
+        }
+
+        .code-bar {
+            height: 8px;
+            border-radius: 100px;
+            background: var(--border);
+        }
+
+        .code-bar.long { width: 65%; }
+        .code-bar.mid  { width: 45%; }
+        .code-bar.short{ width: 30%; }
+        .code-bar.blue { background: var(--accent-pale); width: 55%; }
+
+        .hero-card-footer {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pill {
+            background: var(--accent-pale);
+            color: var(--indigo);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 100px;
+        }
+
+        .pill.dark {
+            background: var(--navy);
+            color: var(--white);
+        }
+
+        .hero-card-float {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: var(--navy);
+            color: var(--white);
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 8px 24px rgba(13,13,94,0.25);
+        }
+
+        .hero-card-float span:first-child {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .hero-card-float span:last-child {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── TOOLS GRID ──────────────────────────────────── */
+        .section {
+            padding: 80px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--navy);
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 16px;
+            color: var(--muted);
+            line-height: 1.75;
+            max-width: 560px;
+            margin-bottom: 56px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .tool-card {
+            background: var(--off-white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: border-color .2s, transform .2s, box-shadow .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-pale) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity .3s;
+            pointer-events: none;
+        }
+
+        .tool-card:hover {
+            border-color: var(--indigo-light);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(13,13,94,0.1);
+        }
+
+        .tool-card:hover::after { opacity: 1; }
+
+        .tool-card.featured {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            background: var(--navy);
+            border-color: transparent;
+            color: var(--white);
+        }
+
+        .tool-card.featured .tool-desc { color: rgba(255,255,255,0.65); }
+        .tool-card.featured .tool-tag { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }
+        .tool-card.featured .tool-link { color: rgba(255,255,255,0.8); }
+        .tool-card.featured .tool-link:hover { color: var(--white); }
+        .tool-card.featured::after { background: linear-gradient(135deg, rgba(85,85,255,0.3) 0%, transparent 60%); }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .tool-card.featured .tool-icon {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .tool-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tool-tag {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: var(--accent-pale);
+            color: var(--indigo);
+            padding: 4px 10px;
+            border-radius: 100px;
+        }
+
+        .tool-name {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+        }
+
+        .tool-desc {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .tool-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--indigo);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: gap .2s, color .2s;
+        }
+
+        .tool-link:hover { gap: 10px; }
+
+        .tool-visual {
+            display: grid;
+            gap: 10px;
+        }
+
+        .tv-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tv-block {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 44px;
+            flex: 1;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .tv-block.accent {
+            background: rgba(85,85,255,0.4);
+            border-color: rgba(85,85,255,0.3);
+            flex: 2;
+        }
+
+        /* ── QUICK START ─────────────────────────────────── */
+        .quickstart-section {
+            background: var(--off-white);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quickstart-inner {
+            padding: 80px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .code-block {
+            background: var(--navy);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .code-block-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cb-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .cb-dot.red   { background: #FF5F57; }
+        .cb-dot.yellow{ background: #FEBC2E; }
+        .cb-dot.green { background: #28C840; }
+
+        .cb-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .code-block-body {
+            padding: 24px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .code-block-body .comment { color: rgba(255,255,255,0.35); }
+        .code-block-body .keyword { color: #9999FF; }
+        .code-block-body .string  { color: #88DDAA; }
+        .code-block-body .fn      { color: #FFD580; }
+
+        /* ── ECOSYSTEM ───────────────────────────────────── */
+        .eco-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .eco-card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: border-color .2s, transform .2s;
+        }
+
+        .eco-card:hover {
+            border-color: var(--indigo-light);
+            transform: translateY(-3px);
+        }
+
+        .eco-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--accent-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .eco-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--navy);
+        }
+
+        .eco-desc {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── CTA ─────────────────────────────────────────── */
+        .cta-section {
+            padding: 80px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cta-inner {
+            background: var(--navy);
+            border-radius: 24px;
+            padding: 72px 64px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-inner::before {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, rgba(85,85,255,0.4) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-inner::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -80px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(85,85,255,0.25) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-inner h2 {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--white);
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .cta-inner p {
+            font-size: 17px;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .cta-actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .btn-white {
+            background: var(--white);
+            color: var(--navy);
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform .15s, box-shadow .2s;
+        }
+
+        .btn-white:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+        }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: background .2s, transform .15s;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255,255,255,0.18);
+            transform: translateY(-2px);
+        }
+
+        /* ── FOOTER ──────────────────────────────────────── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 48px 40px;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 48px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand p {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+            max-width: 240px;
+            line-height: 1.6;
+        }
+
+        .footer-cols {
+            display: flex;
+            gap: 64px;
+        }
+
+        .footer-col h4 {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--navy);
+            margin-bottom: 16px;
+        }
+
+        .footer-col a {
+            display: block;
+            font-size: 14px;
+            color: var(--muted);
+            text-decoration: none;
+            margin-bottom: 10px;
+            transition: color .2s;
+        }
+
+        .footer-col a:hover { color: var(--navy); }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 28px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-bottom p {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* ── RESPONSIVE ──────────────────────────────────── */
+        @media (max-width: 900px) {
+            .hero { grid-template-columns: 1fr; padding: 60px 24px 48px; }
+            .hero-visual { display: none; }
+            .hero h1 { font-size: 38px; }
+            .tools-grid { grid-template-columns: 1fr; }
+            .tool-card.featured { grid-column: span 1; grid-template-columns: 1fr; }
+            .tool-visual { display: none; }
+            .quickstart-inner { grid-template-columns: 1fr; padding: 56px 24px; }
+            .eco-grid { grid-template-columns: 1fr; }
+            .cta-inner { padding: 48px 28px; }
+            .cta-inner h2 { font-size: 28px; }
+            .cta-actions { flex-direction: column; align-items: center; }
+            .footer-inner { flex-direction: column; }
+            .footer-cols { flex-direction: column; gap: 32px; }
+            .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+            header { padding: 0 20px; }
+            nav { gap: 16px; }
+            .section { padding: 56px 24px; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="48" height="48" rx="12" fill="#FF6B00"/>
-                    <path d="M24 12L32 28H16L24 12Z" fill="white"/>
-                    <rect x="16" y="30" width="16" height="6" rx="2" fill="white"/>
-                </svg>
-                <span class="logo-text">Flipova</span>
-            </div>
-            <nav class="nav">
-                <a href="https://flipova.github.io/foundation" class="nav-link">Foundation</a>
-                <a href="https://github.com/flipova" class="nav-link">GitHub</a>
-            </nav>
-        </header>
 
-        <main class="main">
-            <section class="hero">
-                <h1 class="hero-title">
-                    Build Beautiful React Native Apps
-                    <span class="gradient-text">Faster</span>
-                </h1>
-                <p class="hero-subtitle">
-                    Flipova is a modern design system and visual builder for React Native. 
-                    Create stunning apps with drag-and-drop components, comprehensive theming, and clean code generation.
-                </p>
-                <div class="hero-actions">
-                    <a href="https://flipova.github.io/foundation/docs/getting-started" class="btn btn-primary">
-                        Get Started
-                    </a>
-                    <a href="https://github.com/flipova/foundation" class="btn btn-secondary">
-                        View on GitHub
-                    </a>
-                </div>
-            </section>
+<!-- HEADER -->
+<header>
+    <a href="#" class="logo">
+        <div class="logo-mark">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2L14 11H4L9 2Z" fill="white"/>
+                <rect x="4" y="13" width="10" height="3" rx="1.5" fill="white"/>
+            </svg>
+        </div>
+        <span class="logo-wordmark">Flipova</span>
+        <span class="logo-badge">Dev</span>
+    </a>
+    <nav>
+        <a href="#">Documentation</a>
+        <a href="#">Changelog</a>
+        <a href="#">GitHub</a>
+        <a href="#" class="btn-nav">
+            Commencer →
+        </a>
+    </nav>
+</header>
 
-            <section class="features">
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <path d="M8 12L16 20L24 12" stroke="#FF6B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">Visual Builder</h3>
-                        <p class="feature-description">
-                            Drag-and-drop interface to build your UI visually. Generate clean React Native code instantly.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <circle cx="16" cy="16" r="6" stroke="#FF6B00" stroke-width="2"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">Design Tokens</h3>
-                        <p class="feature-description">
-                            Comprehensive design system with tokens for colors, spacing, typography, and more.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <rect x="8" y="8" width="16" height="16" rx="2" stroke="#FF6B00" stroke-width="2"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">23 Layouts</h3>
-                        <p class="feature-description">
-                            Pre-built layout components for common UI patterns. Responsive and theme-ready.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <path d="M16 8V24M8 16H24" stroke="#FF6B00" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">9 Themes</h3>
-                        <p class="feature-description">
-                            Built-in themes including light, dark, neon, and seasonal themes. Easy customization.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <path d="M8 16L13 21L24 10" stroke="#FF6B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">TypeScript</h3>
-                        <p class="feature-description">
-                            Full TypeScript support with type-safe components and auto-completion.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="32" height="32" rx="8" fill="#FF6B00" fill-opacity="0.1"/>
-                                <path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16" stroke="#FF6B00" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="feature-title">Cross-Platform</h3>
-                        <p class="feature-description">
-                            Works seamlessly on iOS, Android, and Web with React Native.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="cta-section">
-                <h2 class="cta-title">Ready to Build?</h2>
-                <p class="cta-subtitle">
-                    Start building beautiful React Native apps with Flipova today.
-                </p>
-                <a href="https://flipova.github.io/foundation/docs/getting-started" class="btn btn-primary btn-large">
-                    Explore Documentation
-                </a>
-            </section>
-        </main>
-
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <div class="footer-logo">
-                        <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="48" height="48" rx="12" fill="#FF6B00"/>
-                            <path d="M24 12L32 28H16L24 12Z" fill="white"/>
-                            <rect x="16" y="30" width="16" height="6" rx="2" fill="white"/>
-                        </svg>
-                        <span class="footer-logo-text">Flipova</span>
-                    </div>
-                    <p class="footer-description">
-                        Modern design system and visual builder for React Native.
-                    </p>
-                </div>
-                <div class="footer-links">
-                    <a href="https://flipova.github.io/foundation" class="footer-link">Foundation Docs</a>
-                    <a href="https://github.com/flipova/foundation" class="footer-link">GitHub</a>
-                    <a href="https://github.com/flipova/foundation/issues" class="footer-link">Issues</a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Flipova. All rights reserved.</p>
-            </div>
-        </footer>
+<!-- HERO -->
+<div style="max-width:1200px;margin:0 auto;">
+<section class="hero">
+    <div>
+        <div class="hero-eyebrow">Plateforme développeur</div>
+        <h1>
+            Construisez avec<br>
+            les outils <em>Flipova</em>
+        </h1>
+        <p>
+            Flipova Dev regroupe tous les outils internes pour les développeurs : design system, librairies, APIs et bien plus. Construisez plus vite, construisez mieux.
+        </p>
+        <div class="hero-actions">
+            <a href="#" class="btn-primary">
+                Explorer les outils →
+            </a>
+            <a href="#" class="btn-outline">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.134 1 1 4.134 1 8c0 3.09 2.003 5.716 4.786 6.635.35.065.479-.152.479-.337 0-.166-.006-.606-.009-1.19-1.948.424-2.359-.94-2.359-.94-.318-.81-.777-1.025-.777-1.025-.635-.435.048-.426.048-.426.703.049 1.072.722 1.072.722.624 1.069 1.637.76 2.036.582.063-.452.244-.761.444-.936-1.554-.176-3.188-.777-3.188-3.461 0-.764.273-1.39.722-1.88-.072-.177-.313-.89.069-1.855 0 0 .588-.188 1.927.718A6.71 6.71 0 018 4.58c.596.003 1.196.08 1.755.236 1.337-.906 1.924-.718 1.924-.718.383.965.142 1.678.07 1.855.45.49.721 1.116.721 1.88 0 2.69-1.637 3.283-3.196 3.456.251.217.475.644.475 1.297 0 .937-.009 1.69-.009 1.92 0 .187.126.406.481.337C12.999 13.714 15 11.089 15 8c0-3.866-3.134-7-7-7z" fill="currentColor"/></svg>
+                GitHub
+            </a>
+        </div>
     </div>
+    <div class="hero-visual">
+        <div class="hero-card">
+            <div class="hero-card-float">
+                <span>12+</span>
+                <span>Outils</span>
+            </div>
+            <div class="hero-card-inner">
+                <div class="code-line">
+                    <div class="code-dot"></div>
+                    <div class="code-bar long"></div>
+                </div>
+                <div class="code-line">
+                    <div class="code-dot"></div>
+                    <div class="code-bar blue"></div>
+                </div>
+                <div class="code-line">
+                    <div class="code-dot"></div>
+                    <div class="code-bar mid"></div>
+                </div>
+                <div class="code-line">
+                    <div class="code-dot"></div>
+                    <div class="code-bar short"></div>
+                </div>
+            </div>
+            <div class="hero-card-footer">
+                <span class="pill dark">Foundation</span>
+                <span class="pill">Design Tokens</span>
+                <span class="pill">API</span>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+
+<!-- TOOLS -->
+<section class="section">
+    <div class="section-label">Outils & Librairies</div>
+    <div class="section-title">Tout ce dont vous avez besoin</div>
+    <p class="section-subtitle">Des outils conçus pour accélérer le développement Flipova, du design à la production.</p>
+
+    <div class="tools-grid">
+
+        <!-- Featured: Foundation -->
+        <a href="https://flipova.github.io/foundation" class="tool-card featured">
+            <div>
+                <div class="tool-icon">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <path d="M11 2L17 14H5L11 2Z" fill="white"/>
+                        <rect x="5" y="16" width="12" height="4" rx="2" fill="white"/>
+                    </svg>
+                </div>
+                <div class="tool-tags">
+                    <span class="tool-tag">Design System</span>
+                    <span class="tool-tag">React Native</span>
+                </div>
+                <div class="tool-name">Foundation</div>
+                <div class="tool-desc">Le design system officiel Flipova pour React Native. Composants, tokens, thèmes et visual builder. 23 layouts, 9 thèmes, TypeScript natif.</div>
+                <span class="tool-link">Voir la documentation →</span>
+            </div>
+            <div class="tool-visual">
+                <div class="tv-row">
+                    <div class="tv-block accent"></div>
+                    <div class="tv-block"></div>
+                </div>
+                <div class="tv-row">
+                    <div class="tv-block"></div>
+                    <div class="tv-block accent"></div>
+                    <div class="tv-block"></div>
+                </div>
+                <div class="tv-row">
+                    <div class="tv-block"></div>
+                    <div class="tv-block"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Flipova CLI -->
+        <a href="#" class="tool-card">
+            <div class="tool-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <rect x="2" y="4" width="18" height="14" rx="3" stroke="#2929C9" stroke-width="1.5"/>
+                    <path d="M6 9L9 11L6 13" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M11 13H16" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="tool-tags"><span class="tool-tag">CLI</span><span class="tool-tag">Tooling</span></div>
+            <div class="tool-name">Flipova CLI</div>
+            <div class="tool-desc">Initialisez des projets, générez des composants, publiez des packages — directement depuis votre terminal.</div>
+            <span class="tool-link">Voir la doc →</span>
+        </a>
+
+        <!-- Tokens Studio -->
+        <a href="#" class="tool-card">
+            <div class="tool-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="#2929C9" stroke-width="1.5"/>
+                    <circle cx="11" cy="11" r="3" fill="#2929C9"/>
+                </svg>
+            </div>
+            <div class="tool-tags"><span class="tool-tag">Tokens</span><span class="tool-tag">Figma</span></div>
+            <div class="tool-name">Tokens Studio</div>
+            <div class="tool-desc">Synchronisez vos design tokens entre Figma, le code et Foundation automatiquement. Single source of truth.</div>
+            <span class="tool-link">En savoir plus →</span>
+        </a>
+
+        <!-- Flipova API -->
+        <a href="#" class="tool-card">
+            <div class="tool-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <path d="M4 11H18M12 5L18 11L12 17" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="tool-tags"><span class="tool-tag">API</span><span class="tool-tag">REST</span></div>
+            <div class="tool-name">Flipova API</div>
+            <div class="tool-desc">API REST pour intégrer les données Flipova dans vos applications. Cartes, espaces, utilisateurs, analytics.</div>
+            <span class="tool-link">Référence API →</span>
+        </a>
+
+        <!-- Dev Kit -->
+        <a href="#" class="tool-card">
+            <div class="tool-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <rect x="3" y="7" width="7" height="8" rx="2" stroke="#2929C9" stroke-width="1.5"/>
+                    <rect x="12" y="4" width="7" height="14" rx="2" stroke="#2929C9" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div class="tool-tags"><span class="tool-tag">SDK</span><span class="tool-tag">React</span></div>
+            <div class="tool-name">Dev Kit</div>
+            <div class="tool-desc">SDK unifié pour accéder aux services Flipova depuis React, React Native ou Node.js. Auth, stockage, events.</div>
+            <span class="tool-link">Explorer →</span>
+        </a>
+
+    </div>
+</section>
+
+<!-- QUICK START -->
+<div class="quickstart-section">
+<div class="quickstart-inner">
+    <div>
+        <div class="section-label">Démarrage rapide</div>
+        <div class="section-title">Prêt en quelques minutes</div>
+        <p class="section-subtitle" style="margin-bottom:32px;">Installez Foundation et commencez à construire avec le design system Flipova dès maintenant.</p>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">1</div>
+                <div>
+                    <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Installer la librairie</div>
+                    <div style="font-size:13px;color:var(--muted);">Via npm, yarn ou pnpm</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">2</div>
+                <div>
+                    <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Configurer le provider</div>
+                    <div style="font-size:13px;color:var(--muted);">Wrappez votre app avec FlipThemeProvider</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">3</div>
+                <div>
+                    <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Importer et utiliser</div>
+                    <div style="font-size:13px;color:var(--muted);">Tous les composants sont disponibles via @flipova/foundation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="code-block">
+        <div class="code-block-header">
+            <div class="cb-dot red"></div>
+            <div class="cb-dot yellow"></div>
+            <div class="cb-dot green"></div>
+            <span class="cb-title">terminal & App.tsx</span>
+        </div>
+        <div class="code-block-body">
+            <span class="comment"># Installer Foundation</span><br>
+            <span class="keyword">npm</span> install @flipova/foundation<br><br>
+            <span class="comment"># Dans votre App.tsx</span><br>
+            <span class="keyword">import</span> { FlipThemeProvider }<br>
+            &nbsp;&nbsp;<span class="keyword">from</span> <span class="string">'@flipova/foundation'</span>;<br><br>
+            <span class="keyword">export default function</span> <span class="fn">App</span>() {<br>
+            &nbsp;&nbsp;<span class="keyword">return</span> (<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="fn">FlipThemeProvider</span>&gt;<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// votre app ici</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="fn">FlipThemeProvider</span>&gt;<br>
+            &nbsp;&nbsp;);<br>
+            }
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ECOSYSTEM -->
+<section class="section">
+    <div class="section-label">Écosystème</div>
+    <div class="section-title">Des ressources pour aller plus loin</div>
+    <p class="section-subtitle">Explorez l'ensemble de l'écosystème Flipova pour les développeurs.</p>
+
+    <div class="eco-grid">
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="2" width="16" height="16" rx="3" stroke="#2929C9" stroke-width="1.5"/>
+                    <path d="M6 7H14M6 10H11M6 13H9" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="eco-name">Documentation complète</div>
+            <div class="eco-desc">Guides, références API, exemples de code et tutoriels pour tous les outils Flipova.</div>
+        </div>
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 2C5.582 2 2 5.582 2 10c0 3.536 2.291 6.533 5.471 7.594.4.074.547-.174.547-.385 0-.19-.007-.693-.01-1.361-2.226.484-2.696-1.074-2.696-1.074-.364-.926-.888-1.172-.888-1.172-.726-.497.055-.487.055-.487.803.057 1.226.825 1.226.825.713 1.221 1.871.869 2.328.665.072-.517.279-.87.508-1.07-1.776-.202-3.644-.888-3.644-3.955 0-.874.312-1.589.825-2.149-.083-.202-.357-1.017.079-2.12 0 0 .673-.215 2.204.821A7.668 7.668 0 0110 5.236c.682.003 1.368.092 2.008.27 1.529-1.036 2.2-.821 2.2-.821.437 1.103.162 1.918.08 2.12.514.56.824 1.275.824 2.149 0 3.075-1.871 3.75-3.654 3.948.287.248.543.736.543 1.483 0 1.07-.01 1.933-.01 2.194 0 .213.144.463.55.385C15.711 16.53 18 13.535 18 10c0-4.418-3.582-8-8-8z" fill="#2929C9"/>
+                </svg>
+            </div>
+            <div class="eco-name">Open Source</div>
+            <div class="eco-desc">Tous les outils Flipova sont open source. Contribuez, signalez des bugs ou proposez des améliorations.</div>
+        </div>
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="8" r="3" stroke="#2929C9" stroke-width="1.5"/>
+                    <path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="eco-name">Communauté dev</div>
+            <div class="eco-desc">Rejoignez les développeurs Flipova sur Discord. Aide, partage de code et roadmap publique.</div>
+        </div>
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 2L12.39 7.26L18 8.18L14 12.08L14.9 17.66L10 15.13L5.1 17.66L6 12.08L2 8.18L7.61 7.26L10 2Z" stroke="#2929C9" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="eco-name">Changelog</div>
+            <div class="eco-desc">Suivez les mises à jour de tous les outils Flipova. Nouvelles features, fixes et breaking changes.</div>
+        </div>
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="3" y="3" width="14" height="14" rx="2" stroke="#2929C9" stroke-width="1.5"/>
+                    <path d="M7 10L9 12L13 8" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="eco-name">Exemples & Templates</div>
+            <div class="eco-desc">Des projets d'exemple complets pour démarrer rapidement avec les outils Flipova.</div>
+        </div>
+        <div class="eco-card">
+            <div class="eco-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 3V10L14 12" stroke="#2929C9" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="10" cy="10" r="7" stroke="#2929C9" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div class="eco-name">Roadmap publique</div>
+            <div class="eco-desc">Consultez et votez pour les prochaines fonctionnalités. La roadmap de Flipova Dev est ouverte à tous.</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="cta-inner">
+        <h2>Prêt à construire ?</h2>
+        <p>Rejoignez les équipes qui utilisent Flipova Dev pour créer des apps plus rapidement.</p>
+        <div class="cta-actions">
+            <a href="#" class="btn-white">Explorer la documentation →</a>
+            <a href="#" class="btn-ghost">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.134 1 1 4.134 1 8c0 3.09 2.003 5.716 4.786 6.635.35.065.479-.152.479-.337 0-.166-.006-.606-.009-1.19-1.948.424-2.359-.94-2.359-.94-.318-.81-.777-1.025-.777-1.025-.635-.435.048-.426.048-.426.703.049 1.072.722 1.072.722.624 1.069 1.637.76 2.036.582.063-.452.244-.761.444-.936-1.554-.176-3.188-.777-3.188-3.461 0-.764.273-1.39.722-1.88-.072-.177-.313-.89.069-1.855 0 0 .588-.188 1.927.718A6.71 6.71 0 018 4.58c.596.003 1.196.08 1.755.236 1.337-.906 1.924-.718 1.924-.718.383.965.142 1.678.07 1.855.45.49.721 1.116.721 1.88 0 2.69-1.637 3.283-3.196 3.456.251.217.475.644.475 1.297 0 .937-.009 1.69-.009 1.92 0 .187.126.406.481.337C12.999 13.714 15 11.089 15 8c0-3.866-3.134-7-7-7z" fill="currentColor"/></svg>
+                GitHub
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="#" class="logo">
+                <div class="logo-mark">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M9 2L14 11H4L9 2Z" fill="white"/>
+                        <rect x="4" y="13" width="10" height="3" rx="1.5" fill="white"/>
+                    </svg>
+                </div>
+                <span class="logo-wordmark">Flipova</span>
+                <span class="logo-badge">Dev</span>
+            </a>
+            <p>Outils & ressources pour les développeurs Flipova.</p>
+        </div>
+        <div class="footer-cols">
+            <div class="footer-col">
+                <h4>Outils</h4>
+                <a href="#">Foundation</a>
+                <a href="#">Flipova CLI</a>
+                <a href="#">Tokens Studio</a>
+                <a href="#">Flipova API</a>
+                <a href="#">Dev Kit</a>
+            </div>
+            <div class="footer-col">
+                <h4>Ressources</h4>
+                <a href="#">Documentation</a>
+                <a href="#">Changelog</a>
+                <a href="#">Exemples</a>
+                <a href="#">Roadmap</a>
+            </div>
+            <div class="footer-col">
+                <h4>Communauté</h4>
+                <a href="#">GitHub</a>
+                <a href="#">Discord</a>
+                <a href="#">Issues</a>
+                <a href="#">flipova.fr</a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>© 2026 Flipova. Tous droits réservés.</p>
+        <p>Fait avec ♥ par l'équipe Flipova</p>
+    </div>
+</footer>
+
 </body>
 </html>
