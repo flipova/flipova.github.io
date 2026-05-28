@@ -1,0 +1,29 @@
+name: Flipova Developers
+tagline: Tous les outils pour construire avec Flipova
+
+links:
+  - label: Foundation - Design System
+    description: Composants React Native, 9 thèmes, 23 layouts
+    url: https://dev.flipova.fr/foundation
+    icon: foundation
+    highlight: true
+
+  - label: Documentation
+    description: Guides, API reference, exemples
+    url: https://dev.flipova.fr
+    icon: book
+
+  - label: GitHub
+    description: Code source, issues, contributions
+    url: https://github.com/flipova/foundation
+    icon: github
+
+  - label: Flippa AI
+    description: Assistant IA pour développeurs — bêta
+    url: https://flipova.fr/flippa
+    icon: sparkle
+
+  - label: flipova.fr
+    description: Site principal
+    url: https://flipova.fr
+    icon: globe
