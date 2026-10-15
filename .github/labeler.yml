@@ -1,0 +1,31 @@
+# Config actions/labeler v5+/v6 : label -> chemins
+"area: ci":
+  - changed-files:
+      - any-glob-to-any-file: [".github/**"]
+"area: docs":
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.md", "docs/**"]
+"area: tests":
+  - changed-files:
+      - any-glob-to-any-file: ["**/test/**", "**/tests/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*"]
+"area: deps":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "package-lock.json"
+          - "pnpm-lock.yaml"
+          - "yarn.lock"
+          - "requirements*.txt"
+          - "pyproject.toml"
+          - "go.mod"
+          - "go.sum"
+          - "Cargo.toml"
+          - "Cargo.lock"
+          - "pom.xml"
+          - "build.gradle*"
+"area: docker":
+  - changed-files:
+      - any-glob-to-any-file: ["**/Dockerfile*", "**/docker-compose*.y*ml", ".dockerignore"]
+"area: infra":
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.tf", "terraform/**", "helm/**", "k8s/**", "infra/**"]
