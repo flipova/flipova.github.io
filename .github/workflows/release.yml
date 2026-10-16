@@ -1,0 +1,209 @@
+# Pipeline — the structure, nothing else.
+#
+#   dev  ->  alpha  ->  beta  ->  rc  ->  main  ->  tag @org/repo@X.Y.Z
+#
+# A SKELETON on purpose. Five jobs, one responsibility each, and the steps a Node
+# repository usually starts with. A repository is expected to adapt it: delete the
+# steps that do not apply, add the ones that do. The starter never takes a file
+# back once the repository owns it.
+#
+#   ladder    the policy: who may feed whom            (pull requests only)
+#   quality   the code: lint, format, types, tests     (every run)
+#   security  CodeQL                                   (pull requests, main, tags)
+#   deliver   whatever the repository delivers         (release tags only)
+#   summary   what this run meant                      (always)
+#
+# The two switches are `if:` (does the job apply here?) and the job `name:` (what
+# the reviewers read on the pull request). Nothing else needs to be clever.
+name: pipeline
+
+# Every run states what it is, in its own title, so the Actions tab stops being a
+# wall of commit subjects to decode:
+#   pull_request · rc <- chore/release-2.4.3      push · alpha      push · @flipova/x@1.2.3
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+  && format('pull_request · {0} <- {1}', github.base_ref, github.head_ref)
+  || format('{0} · {1}', github.event_name, github.ref_name) }}
+
+on:
+  push:
+    branches: [dev, alpha, beta, rc, main]
+    tags: ['@**'] # the release tag is the package coordinate: @org/repo@1.2.3
+  pull_request:
+    branches: [dev, alpha, beta, rc, main]
+  workflow_dispatch: # re-run by hand instead of pushing an empty commit
+
+permissions:
+  contents: read
+
+# One live run per branch or tag. A delivery is never cancelled; a check is
+# cancelled as soon as it is superseded.
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The policy: is this pull request allowed to exist? The only job that can fail
+  # for a reason that is not a failing test.
+  # ---------------------------------------------------------------------------
+  ladder:
+    name: ladder
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: only the previous channel may feed the next one
+        run: |
+          src="${GITHUB_HEAD_REF}"
+          dst="${GITHUB_BASE_REF}"
+          case "$dst" in
+            dev)   upstream="any work branch" ;;
+            alpha) upstream="dev" ;;
+            beta)  upstream="alpha" ;;
+            rc)    upstream="beta" ;;
+            main)  upstream="rc" ;;
+          esac
+          echo "source=$src  target=$dst  expected=$upstream"
+
+          # Branches the tooling creates for itself are mechanics, not a decision.
+          case "$src" in
+            chore/release-*|chore/promotion-*) echo "::notice::$src -> $dst : produced by corral, not policed here"; exit 0 ;;
+            hotfix/*) echo "::notice::$src -> $dst : hotfix accepted"; exit 0 ;;
+          esac
+          if [ "$dst" = "dev" ]; then echo "::notice::$src -> dev : any work branch is accepted"; exit 0; fi
+          if [ "$src" = "$upstream" ]; then echo "::notice::$src -> $dst : accepted"; exit 0; fi
+
+          echo "::error::« $src » cannot target « $dst »: promote through « $upstream » first, or open a hotfix/* branch"
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # The code. Adapt the step list: this is where a repository puts its own
+  # `npm run …` calls, its language matrix, its generated-artifact checks.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: install
+        run: npm ci
+      - name: lint
+        run: npm run lint --if-present
+      - name: format
+        run: npm run format:check --if-present
+      - name: types
+        run: npm run typecheck --if-present
+      - name: tests
+        run: npm test --if-present
+      - name: build
+        run: npm run build
+      # ↓ the repository's own checks go here: generated files up to date, docs
+      #   build, publishable tarball, a second language, a second Node version…
+
+  # ---------------------------------------------------------------------------
+  # CodeQL, before a pull request merges and before a tag is delivered.
+  # ---------------------------------------------------------------------------
+  security:
+    name: security (CodeQL)
+    needs: quality
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # required to publish the findings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+
+  # ---------------------------------------------------------------------------
+  # Production. A release tag is the only thing that delivers, and only after the
+  # tag has been checked against the version in the manifest. The repository says
+  # what "deliver" means in its own `deploy` script — npm package, site, image,
+  # binary, nothing at all.
+  # ---------------------------------------------------------------------------
+  deliver:
+    name: deliver (production)
+    needs: security
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: write
+      id-token: write # OIDC: lets a registry accept the publish without a secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: install
+        run: npm ci
+      - name: the tag must match the manifest
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="${GITHUB_REF_NAME##*@}"
+          echo "manifest=$version  tag=$tag"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::the tag ($tag) does not match the manifest ($version)"
+            exit 1
+          fi
+      - name: deliver (the repository's own `deploy` script)
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-alpha*) tag=alpha ;;
+            *-beta*)  tag=beta ;;
+            *-rc*)    tag=rc ;;
+            *)        tag=latest ;;
+          esac
+          echo "::notice::delivering with « npm run deploy -- --tag $tag »"
+          npm run deploy -- --tag "$tag"
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            *-alpha*|*-beta*|*-rc*) flag="--prerelease" ;;
+            *) flag="" ;;
+          esac
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 ||
+            gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes $flag
+
+  # ---------------------------------------------------------------------------
+  # One table at the end of every run, so reading the Actions tab never requires
+  # opening a job and guessing.
+  # ---------------------------------------------------------------------------
+  summary:
+    name: summary
+    if: always()
+    needs: [ladder, quality, security, deliver]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: what this run meant
+        run: |
+          {
+            echo "### pipeline · \`${GITHUB_REF_NAME}\` · ${GITHUB_EVENT_NAME}"
+            echo ""
+            echo "| job | result |"
+            echo "| --- | --- |"
+            echo "| ladder | ${{ needs.ladder.result }} |"
+            echo "| quality | ${{ needs.quality.result }} |"
+            echo "| security | ${{ needs.security.result }} |"
+            echo "| deliver | ${{ needs.deliver.result }} |"
+            echo ""
+            echo "Ladder: \`dev -> alpha -> beta -> rc -> main -> tag @org/repo@X.Y.Z\`"
+            echo ""
+            echo "\`skipped\` means the job does not apply here."
+          } >> "$GITHUB_STEP_SUMMARY"
