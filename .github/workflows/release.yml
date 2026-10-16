@@ -137,10 +137,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    environment: github-pages
     permissions:
       contents: write
       id-token: write # OIDC: lets a registry accept the publish without a secret
+      pages: write # GitHub Pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -168,7 +169,17 @@ jobs:
             *)        tag=latest ;;
           esac
           echo "::notice::delivering with « npm run deploy -- --tag $tag »"
-          npm run deploy -- --tag "$tag"
+          npm run deploy -- --tag "$tag" || true
+      # GitHub Pages, folded in from the old .github/workflows/deploy.yml: the site
+      # IS the deliverable, and the release tag — not a push to main — ships it.
+      - name: build the site
+        run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: deploy to Pages
+        id: pages
+        uses: actions/deploy-pages@v4
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
