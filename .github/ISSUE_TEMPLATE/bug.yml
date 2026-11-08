@@ -1,17 +1,25 @@
-name: Bug
-description: Signaler un dysfonctionnement
-title: "[Bug] "
+name: "Bug"
+description: "Something does not work as expected"
 labels: ["bug"]
 body:
   - type: textarea
-    id: description
+    id: what
     attributes:
-      label: Description
+      label: "What happens"
+      description: "What you did, what you saw, what you expected."
     validations:
       required: true
   - type: textarea
-    id: reproduction
+    id: steps
     attributes:
-      label: Étapes de reproduction
+      label: "How to reproduce"
+      description: "The shortest steps that show it."
     validations:
       required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: "Version and environment"
+      description: "Version, operating system, browser or runtime."
+    validations:
+      required: false
