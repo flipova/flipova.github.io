@@ -1,137 +1,96 @@
-# Pipeline — the structure, nothing else.
+# corral-pipeline v4 kind:node sha256:b9c48cbb85761718
+# Managed by Corral. Do not edit by hand: `corral release doctor --fix` rewrites this file.
 #
-#   dev  ->  alpha  ->  beta  ->  rc  ->  main  ->  tag @org/repo@X.Y.Z
+# One pipeline per kind of project (node here), identical in every repository of that kind, with no logic of its own.
+# What is specific to a repository lives in the repository, as an OVERRIDE of a default:
+#   verify   npm script `ci:verify` (default: lint, typecheck, test, build when the scripts exist)
+#   deliver  npm script `ci:deliver -- --tag <channel>` (default: npm publish --provenance --access public --tag <channel>)
 #
-# A SKELETON on purpose. Five jobs, one responsibility each, and the steps a Node
-# repository usually starts with. A repository is expected to adapt it: delete the
-# steps that do not apply, add the ones that do. The starter never takes a file
-# back once the repository owns it.
-#
-#   ladder    the policy: who may feed whom            (pull requests only)
-#   quality   the code: lint, format, types, tests     (every run)
-#   security  CodeQL                                   (pull requests, main, tags)
-#   deliver   whatever the repository delivers         (release tags only)
-#   summary   what this run meant                      (always)
-#
-# The two switches are `if:` (does the job apply here?) and the job `name:` (what
-# the reviewers read on the pull request). Nothing else needs to be clever.
+# The version is the git tag. Nothing is committed: `deliver` stamps the tag's version into the build inside the runner.
+# A tag is the only thing that publishes. The FILE is called release.yml on purpose (registries bind trusted publishers to it).
 name: pipeline
-
-# Every run states what it is, in its own title, so the Actions tab stops being a
-# wall of commit subjects to decode:
-#   pull_request · rc <- chore/release-2.4.3      push · alpha      push · @flipova/x@1.2.3
 run-name: >-
   ${{ github.event_name == 'pull_request'
   && format('pull_request · {0} <- {1}', github.base_ref, github.head_ref)
   || format('{0} · {1}', github.event_name, github.ref_name) }}
-
 on:
-  push:
-    branches: [dev, alpha, beta, rc, main]
-    tags: ['@**'] # the release tag is the package coordinate: @org/repo@1.2.3
   pull_request:
-    branches: [dev, alpha, beta, rc, main]
-  workflow_dispatch: # re-run by hand instead of pushing an empty commit
+    branches: [main]
+  push:
+    tags: ["v*", "@**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# One live run per branch or tag. A delivery is never cancelled; a check is
-# cancelled as soon as it is superseded.
 concurrency:
   group: pipeline-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # The policy: is this pull request allowed to exist? The only job that can fail
-  # for a reason that is not a failing test.
-  # ---------------------------------------------------------------------------
-  ladder:
-    name: ladder
-    if: github.event_name == 'pull_request'
+  integrity:
+    name: model integrity
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: only the previous channel may feed the next one
+      - uses: actions/checkout@v6
+      - name: this file is the Corral model, unedited
         run: |
-          src="${GITHUB_HEAD_REF}"
-          dst="${GITHUB_BASE_REF}"
-          case "$dst" in
-            dev)   upstream="any work branch" ;;
-            alpha) upstream="dev" ;;
-            beta)  upstream="alpha" ;;
-            rc)    upstream="beta" ;;
-            main)  upstream="rc" ;;
-          esac
-          echo "source=$src  target=$dst  expected=$upstream"
+          f=.github/workflows/release.yml
+          declared=$(head -n 1 "$f" | sed -n 's/.*sha256:\([0-9a-f]*\).*/\1/p')
+          actual=$(tail -n +2 "$f" | tr -d '\r' | sha256sum | cut -c1-16)
+          echo "declared=$declared actual=$actual"
+          if [ -z "$declared" ] || [ "$declared" != "$actual" ]; then
+            echo "::error::$f was edited (by hand or by a bot such as Dependabot). Do not edit it: run 'corral release doctor --fix' to restore the model."
+            exit 1
+          fi
 
-          # Branches the tooling creates for itself are mechanics, not a decision.
-          case "$src" in
-            chore/release-*|chore/promotion-*) echo "::notice::$src -> $dst : produced by corral, not policed here"; exit 0 ;;
-            hotfix/*) echo "::notice::$src -> $dst : hotfix accepted"; exit 0 ;;
-            dependabot/*) echo "::notice::$src -> $dst : dependabot PR accepted to $dst"; exit 0 ;;
-          esac
-          if [ "$dst" = "dev" ]; then echo "::notice::$src -> dev : any work branch is accepted"; exit 0; fi
-          if [ "$src" = "$upstream" ]; then echo "::notice::$src -> $dst : accepted"; exit 0; fi
-
-          echo "::error::« $src » cannot target « $dst »: promote through « $upstream » first, or open a hotfix/* branch"
-          exit 1
-
-  # ---------------------------------------------------------------------------
-  # The code. Adapt the step list: this is where a repository puts its own
-  # `npm run …` calls, its language matrix, its generated-artifact checks.
-  # ---------------------------------------------------------------------------
-  quality:
-    name: quality
+  verify:
+    name: verify (node ${{ matrix.node }})
+    needs: integrity
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
-      - name: install
-        run: npm ci
-      - name: lint
-        run: npm run lint --if-present
-      - name: format
-        run: npm run format:check --if-present
-      - name: types
-        run: npm run typecheck --if-present
-      - name: tests
-        run: npm test --if-present
-      - name: build
-        run: npm run build
-      # ↓ the repository's own checks go here: generated files up to date, docs
-      #   build, publishable tarball, a second language, a second Node version…
-
-  # ---------------------------------------------------------------------------
-  # CodeQL, before a pull request merges and before a tag is delivered.
-  # ---------------------------------------------------------------------------
+      - run: npm ci
+      - name: verify
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['ci:verify'] ? 0 : 1)"; then
+            npm run ci:verify
+          else
+            npm run lint --if-present && npm run typecheck --if-present && npm test --if-present && npm run build --if-present
+          fi
   security:
-    name: security (CodeQL)
-    needs: quality
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+    name: security (Semgrep)
+    needs: verify
+    # not for Dependabot PRs: a dependency bump gets verify; the scan runs on every other PR and on every tag
+    if: (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]') || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
-      security-events: write # required to publish the findings
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@v6
+      # Static analysis that sends nothing to GitHub: no extra token permission, no results endpoint that can refuse it.
+      # Findings of ERROR severity stop the pipeline; the full report is kept as an artifact of the run.
+      - name: Static analysis (Semgrep)
+        run: |
+          pipx run --spec semgrep==1.184.0 semgrep scan --config p/default --metrics=off --severity ERROR --error --exclude node_modules --exclude dist --exclude build --exclude coverage --sarif-output=semgrep.sarif
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
-          languages: javascript-typescript
-      - uses: github/codeql-action/analyze@v3
-
-  # ---------------------------------------------------------------------------
-  # Production. A release tag is the only thing that delivers, and only after the
-  # tag has been checked against the version in the manifest. The repository says
-  # what "deliver" means in its own `deploy` script — npm package, site, image,
-  # binary, nothing at all.
-  # ---------------------------------------------------------------------------
+          name: semgrep-report
+          path: semgrep.sarif
+          if-no-files-found: ignore
   deliver:
     name: deliver (production)
     needs: security
@@ -141,54 +100,57 @@ jobs:
     environment: production
     permissions:
       contents: write
-      id-token: write # OIDC: lets a registry accept the publish without a secret
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-      - name: install
-        run: npm ci
-      - name: the tag must match the manifest
+      - run: npm ci
+      - name: npm recent (trusted publishing needs npm >= 11.5.1)
         run: |
-          version=$(node -p "require('./package.json').version")
-          tag="${GITHUB_REF_NAME##*@}"
-          echo "manifest=$version  tag=$tag"
-          if [ "$version" != "$tag" ]; then
-            echo "::error::the tag ($tag) does not match the manifest ($version)"
-            exit 1
-          fi
-      - name: deliver (the repository's own `deploy` script)
+          npm install -g npm@latest
+          npm config set registry https://registry.npmjs.org/
+      - name: the version is the tag
         run: |
-          version=$(node -p "require('./package.json').version")
+          version="${GITHUB_REF_NAME##*@}"
+          version="${version#v}"
           case "$version" in
-            *-alpha*) tag=alpha ;;
-            *-beta*)  tag=beta ;;
-            *-rc*)    tag=rc ;;
-            *)        tag=latest ;;
+            *-alpha*) channel=alpha ;;
+            *-beta*)  channel=beta ;;
+            *-rc*)    channel=rc ;;
+            *)        channel=latest ;;
           esac
-          echo "::notice::delivering with « npm run deploy -- --tag $tag »"
-          npm run deploy -- --tag "$tag"
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_CHANNEL=$channel" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+      - name: stamp the tag's version into package.json (not committed)
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
+      - run: npm run build --if-present
+      - name: deliver
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['ci:deliver'] ? 0 : 1)"; then
+            npm run ci:deliver -- --tag "$RELEASE_CHANNEL"
+          else
+            npm publish --provenance --access public --tag "$RELEASE_CHANNEL"
+          fi
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          case "${GITHUB_REF_NAME}" in
+          case "$GITHUB_REF_NAME" in
             *-alpha*|*-beta*|*-rc*) flag="--prerelease" ;;
             *) flag="" ;;
           esac
-          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 ||
-            gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes $flag
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes $flag
+          fi
 
-  # ---------------------------------------------------------------------------
-  # One table at the end of every run, so reading the Actions tab never requires
-  # opening a job and guessing.
-  # ---------------------------------------------------------------------------
   summary:
     name: summary
     if: always()
-    needs: [ladder, quality, security, deliver]
+    needs: [integrity, verify, security, deliver]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -199,12 +161,8 @@ jobs:
             echo ""
             echo "| job | result |"
             echo "| --- | --- |"
-            echo "| ladder | ${{ needs.ladder.result }} |"
-            echo "| quality | ${{ needs.quality.result }} |"
+            echo "| integrity | ${{ needs.integrity.result }} |"
+            echo "| verify | ${{ needs.verify.result }} |"
             echo "| security | ${{ needs.security.result }} |"
             echo "| deliver | ${{ needs.deliver.result }} |"
-            echo ""
-            echo "Ladder: \`dev -> alpha -> beta -> rc -> main -> tag @org/repo@X.Y.Z\`"
-            echo ""
-            echo "\`skipped\` means the job does not apply here."
           } >> "$GITHUB_STEP_SUMMARY"
