@@ -1,4 +1,4 @@
-# corral-ci-lib git-auth v1 sha256:2eb6f86c94944cb3
+# corral-ci-lib git-auth v1 sha256:8eab085453949c68
 name: git-auth
 description: Gives git (and so npm) read access to the private git dependencies of the project.
 inputs:
@@ -23,7 +23,7 @@ runs:
       run: |
         set -euo pipefail
         if [ -z "$GIT_AUTH_TOKEN" ]; then
-          echo "::error title=git-auth::no token: the private repositories this project depends on cannot be read (npm would fall back to ssh and fail with \"Permission denied (publickey)\"). Create a fine-grained token with Contents: read on those repositories, store it with: corral vault publish github, and pass it in ci/ci.yml: access: { use: ci/lib/git-auth, with: { token: \${{ secrets.ORG_READ_TOKEN }} } }"
+          echo "::error title=git-auth::no token: the private repositories this project depends on cannot be read (npm would fall back to ssh and fail with \"Permission denied (publickey)\"). Create a fine-grained token with Contents: read on those repositories, store it as the repository secret ORG_READ_TOKEN (corral vault publish github --only ORG_READ_TOKEN --repo-secret), and pass it as the token input of the access step in ci/ci.yml."
           exit 1
         fi
         echo "::add-mask::$GIT_AUTH_TOKEN"
