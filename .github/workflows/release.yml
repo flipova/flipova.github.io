@@ -1,10 +1,10 @@
-# corral-pipeline v4 kind:node sha256:b9c48cbb85761718
+# corral-pipeline v4 kind:node ci:2c044fb80e8ae16f sha256:be32d5199858c377
 # Managed by Corral. Do not edit by hand: `corral release doctor --fix` rewrites this file.
 #
 # One pipeline per kind of project (node here), identical in every repository of that kind, with no logic of its own.
 # What is specific to a repository lives in the repository, as an OVERRIDE of a default:
-#   verify   npm script `ci:verify` (default: lint, typecheck, test, build when the scripts exist)
-#   deliver  npm script `ci:deliver -- --tag <channel>` (default: npm publish --provenance --access public --tag <channel>)
+#   verify   the steps of `ci/ci.yml` (edit it, then `corral ci sync`)
+#   deliver  the `deliver` step of `ci/ci.yml` (edit it, then `corral ci sync`)
 #
 # The version is the git tag. Nothing is committed: `deliver` stamps the tag's version into the build inside the runner.
 # A tag is the only thing that publishes. The FILE is called release.yml on purpose (registries bind trusted publishers to it).
@@ -44,6 +44,16 @@ jobs:
             echo "::error::$f was edited (by hand or by a bot such as Dependabot). Do not edit it: run 'corral release doctor --fix' to restore the model."
             exit 1
           fi
+      - name: ci/ci.yml is the one this file was generated from
+        run: |
+          f=.github/workflows/release.yml
+          declared=$(head -n 1 "$f" | sed -n 's/.* ci:\([0-9a-f]*\) .*/\1/p')
+          actual=$(tr -d '\r' < ci/ci.yml | sha256sum | cut -c1-16)
+          echo "declared=$declared actual=$actual"
+          if [ "$declared" != "$actual" ]; then
+            echo "::error::ci/ci.yml changed since $f was generated from it. Run 'corral ci sync' and commit both files."
+            exit 1
+          fi
 
   verify:
     name: verify (node ${{ matrix.node }})
@@ -53,25 +63,48 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [20, 22]
+        node: [22]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
-      - name: verify
+      - name: access
+        uses: ./ci/lib/git-auth
+        with:
+          token: "${{ secrets.ORG_READ_TOKEN }}"
+      - name: install
+        run: npm ci
+      # format: skipped: no format command for this project
+      - name: lint
+        run: npm run lint
+      # typecheck: skipped: plain JavaScript, no type checker
+      - name: test
+        run: npm test
+      - name: build
+        run: npm run build
+      - name: audit
+        continue-on-error: true
         run: |
-          if node -e "process.exit(require('./package.json').scripts?.['ci:verify'] ? 0 : 1)"; then
-            npm run ci:verify
-          else
-            npm run lint --if-present && npm run typecheck --if-present && npm test --if-present && npm run build --if-present
+          corral_d=$(mktemp -d)
+          cat > "$corral_d/check.sh" <<'CORRAL_AUDIT_CHECK'
+          npm audit --json
+          CORRAL_AUDIT_CHECK
+          cat > "$corral_d/fix.sh" <<'CORRAL_AUDIT_FIX'
+          npm audit fix
+          CORRAL_AUDIT_FIX
+          if ! bash -e "$corral_d/check.sh"; then
+            echo "::warning title=audit::the check failed: applying the fix, then checking again"
+            bash -e "$corral_d/fix.sh"
+            git --no-pager diff --stat || true
+            bash -e "$corral_d/check.sh"
+            echo "::warning title=audit::repaired in the runner only: apply it in your branch (corral code fix) and commit"
           fi
   security:
-    name: security (Semgrep)
+    name: security
     needs: verify
-    # not for Dependabot PRs: a dependency bump gets verify; the scan runs on every other PR and on every tag
+    # not for Dependabot PRs: a dependency bump gets verify; the security steps of ci/ci.yml run on every other PR and on every tag
     if: (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]') || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -79,25 +112,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      # Static analysis that sends nothing to GitHub: no extra token permission, no results endpoint that can refuse it.
-      # Findings of ERROR severity stop the pipeline; the full report is kept as an artifact of the run.
-      - name: Static analysis (Semgrep)
-        run: |
-          pipx run --spec semgrep==1.184.0 semgrep scan --config p/default --metrics=off --severity ERROR --error --exclude node_modules --exclude dist --exclude build --exclude coverage --sarif-output=semgrep.sarif
-      - name: Keep the report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: semgrep-report
-          path: semgrep.sarif
-          if-no-files-found: ignore
+      - name: sast
+        uses: ./ci/lib/semgrep
+      - name: secrets
+        uses: ./ci/lib/secrets
+      # sbom: skipped: not requested (corral ci add <name> turns it on)
   deliver:
-    name: deliver (production)
+    name: "deliver (${{ contains(github.ref_name, '-alpha') && 'staging' || contains(github.ref_name, '-beta') && 'staging' || contains(github.ref_name, '-rc') && 'staging' || 'production' }})"
     needs: security
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    environment: ${{ contains(github.ref_name, '-alpha') && 'staging' || contains(github.ref_name, '-beta') && 'staging' || contains(github.ref_name, '-rc') && 'staging' || 'production' }}
     permissions:
       contents: write
       id-token: write
@@ -107,7 +133,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: access
+        uses: ./ci/lib/git-auth
+        with:
+          token: "${{ secrets.ORG_READ_TOKEN }}"
+      - name: install
+        run: npm ci
       - name: npm recent (trusted publishing needs npm >= 11.5.1)
         run: |
           npm install -g npm@latest
@@ -127,14 +158,10 @@ jobs:
           echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
       - name: stamp the tag's version into package.json (not committed)
         run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
-      - run: npm run build --if-present
+      - name: build
+        run: npm run build
       - name: deliver
-        run: |
-          if node -e "process.exit(require('./package.json').scripts?.['ci:deliver'] ? 0 : 1)"; then
-            npm run ci:deliver -- --tag "$RELEASE_CHANNEL"
-          else
-            npm publish --provenance --access public --tag "$RELEASE_CHANNEL"
-          fi
+        run: "echo 'the site is the deliverable: the documentation job builds it and the pages job publishes it to GitHub Pages'"
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -147,10 +174,48 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes $flag
           fi
 
+  docs:
+    name: documentation site
+    needs: integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: access
+        uses: ./ci/lib/git-auth
+        with:
+          token: "${{ secrets.ORG_READ_TOKEN }}"
+      - name: docs
+        uses: ./ci/lib/docs-site
+        with:
+          directory: .
+          install: npm ci
+          build: npm run build
+          output: dist
+          node-version: "22"
+  pages:
+    name: publish the documentation
+    needs: [docs, deliver]
+    # every tag publishes the site, prereleases included: the documentation follows the version that was just delivered
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
   summary:
     name: summary
     if: always()
-    needs: [integrity, verify, security, deliver]
+    needs: [integrity, verify, security, deliver, docs, pages]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -165,4 +230,6 @@ jobs:
             echo "| verify | ${{ needs.verify.result }} |"
             echo "| security | ${{ needs.security.result }} |"
             echo "| deliver | ${{ needs.deliver.result }} |"
+            echo "| docs | ${{ needs.docs.result }} |"
+            echo "| pages | ${{ needs.pages.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
