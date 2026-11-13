@@ -1,0 +1,54 @@
+# corral-ci-lib git-auth v1 sha256:2eb6f86c94944cb3
+name: git-auth
+description: Gives git (and so npm) read access to the private git dependencies of the project.
+inputs:
+  token:
+    description: Token with read access to the private repositories (secret)
+    required: true
+  host:
+    description: Git host
+    default: github.com
+  check:
+    description: owner/repo list (space separated) probed before the install; empty = the git dependencies named by package.json
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Authenticate git to the private dependencies
+      shell: bash
+      env:
+        GIT_AUTH_TOKEN: ${{ inputs.token }}
+        GIT_AUTH_HOST: ${{ inputs.host }}
+        GIT_AUTH_CHECK: ${{ inputs.check }}
+      run: |
+        set -euo pipefail
+        if [ -z "$GIT_AUTH_TOKEN" ]; then
+          echo "::error title=git-auth::no token: the private repositories this project depends on cannot be read (npm would fall back to ssh and fail with \"Permission denied (publickey)\"). Create a fine-grained token with Contents: read on those repositories, store it with: corral vault publish github, and pass it in ci/ci.yml: access: { use: ci/lib/git-auth, with: { token: \${{ secrets.ORG_READ_TOKEN }} } }"
+          exit 1
+        fi
+        echo "::add-mask::$GIT_AUTH_TOKEN"
+        host="$GIT_AUTH_HOST"
+        base="https://x-access-token:${GIT_AUTH_TOKEN}@${host}/"
+        # every spelling of the same repository goes through the token: https, ssh://, git+ssh://, scp-like
+        git config --global url."$base".insteadOf "https://${host}/"
+        git config --global --add url."$base".insteadOf "ssh://git@${host}/"
+        git config --global --add url."$base".insteadOf "git+ssh://git@${host}/"
+        git config --global --add url."$base".insteadOf "git@${host}:"
+        git config --global --add url."$base".insteadOf "git://${host}/"
+        repos="$GIT_AUTH_CHECK"
+        if [ -z "$repos" ] && [ -f package.json ]; then
+          repos=$(node -e '
+            const p=require("./package.json");
+            const all={...p.dependencies,...p.devDependencies,...p.optionalDependencies};
+            const re=/(?:git\+)?(?:https?|ssh):\/\/(?:git@)?[^/]+\/([^/]+\/[^/#]+?)(?:\.git)?(?:#.*)?$|^github:([^#]+)/;
+            for (const v of Object.values(all)) { const m=re.exec(String(v)); if (m) console.log(m[1]||m[2]); }
+          ' | sort -u | tr '\n' ' ')
+        fi
+        for r in $repos; do
+          if git ls-remote --exit-code "https://${host}/${r}.git" HEAD >/dev/null 2>&1; then
+            echo "readable: ${r}"
+          else
+            echo "::error title=git-auth::the token cannot read ${host}/${r}: give it Contents: read on that repository (fine-grained token) or the repo scope (classic token)"
+            exit 1
+          fi
+        done

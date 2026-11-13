@@ -1,0 +1,46 @@
+# CI contract: how THIS project does each standard step. The workflow (.github/workflows/release.yml) is generated from it:
+# after editing, run `corral ci sync`. One of run | script | use | skip per step. See `corral help ci`.
+version: 1
+environments:
+  alpha: staging
+  beta: staging
+  rc: staging
+  latest: production
+runtimes: [22]
+steps:
+  access:
+    use: ci/lib/git-auth
+    with:
+      token: "${{ secrets.ORG_READ_TOKEN }}"
+  install:
+    run: npm ci
+  format:
+    skip: no format command for this project
+  lint:
+    run: npm run lint
+  typecheck:
+    skip: plain JavaScript, no type checker
+  test:
+    run: npm test
+  build:
+    run: npm run build
+  audit:
+    run: npm audit --json
+    fix: npm audit fix
+    blocking: false
+  sast:
+    use: ci/lib/semgrep
+  secrets:
+    use: ci/lib/secrets
+  sbom:
+    skip: "not requested (corral ci add <name> turns it on)"
+  deliver:
+    run: "echo 'the site is the deliverable: the documentation job builds it and the pages job publishes it to GitHub Pages'"
+  docs:
+    use: ci/lib/docs-site
+    with:
+      directory: .
+      install: npm ci
+      build: npm run build
+      output: dist
+      node-version: "22"
