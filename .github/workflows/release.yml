@@ -1,4 +1,4 @@
-# corral-pipeline v4 kind:node ci:8a70994055934b80 sha256:eda1737102ab52bb
+# corral-pipeline v4 kind:node ci:cbf5673a792dbae8 sha256:be9d62916efe4624
 # Managed by Corral. Do not edit by hand: `corral release doctor --fix` rewrites this file.
 #
 # One pipeline per kind of project (node here), identical in every repository of that kind, with no logic of its own.
@@ -191,7 +191,7 @@ jobs:
         uses: ./ci/lib/docs-site
         with:
           directory: .
-          install: npm ci
+          install: "npm ci && npm update @flipova/languages @flipova/assets"
           build: npm run build
           output: dist
           node-version: "22"

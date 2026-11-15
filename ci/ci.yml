@@ -40,7 +40,7 @@ steps:
     use: ci/lib/docs-site
     with:
       directory: .
-      install: npm ci
+      install: "npm ci && npm update @flipova/languages @flipova/assets"
       build: npm run build
       output: dist
       node-version: "22"
