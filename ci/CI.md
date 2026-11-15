@@ -715,7 +715,7 @@ Fails when something that looks like a credential is committed (keys, tokens, pa
 
 | Input (`with:`) | Default | Meaning |
 | --- | --- | --- |
-| `exclude` | `(^\|/)(node_modules\|dist\|build\|coverage\|vendor\|\.git)/\|(^\|/)(package-lock\.json\|pnpm-lock\.yaml\|yarn\.lock\|Cargo\.lock\|poetry\.lock\|go\.sum\|i18n\.lock\.json\|skills-lock\.json)$\|^documentation/i18n/` | regular expression of paths to skip (default: dependencies, build output and lock files) |
+| `exclude` | `(^\|/)(node_modules\|dist\|build\|coverage\|vendor\|\.git)/\|(^\|/)(package-lock\.json\|pnpm-lock\.yaml\|yarn\.lock\|Cargo\.lock\|poetry\.lock\|go\.sum\|i18n\.lock\.json\|skills-lock\.json\|assets\.index\.json)$\|^documentation/i18n/` | regular expression of paths to skip (default: dependencies, build output and lock files) |
 
 Example:
 

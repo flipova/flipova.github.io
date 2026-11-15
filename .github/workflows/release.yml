@@ -1,4 +1,4 @@
-# corral-pipeline v4 kind:node ci:2c044fb80e8ae16f sha256:be32d5199858c377
+# corral-pipeline v4 kind:node ci:8a70994055934b80 sha256:eda1737102ab52bb
 # Managed by Corral. Do not edit by hand: `corral release doctor --fix` rewrites this file.
 #
 # One pipeline per kind of project (node here), identical in every repository of that kind, with no logic of its own.
@@ -75,7 +75,7 @@ jobs:
         with:
           token: "${{ secrets.ORG_READ_TOKEN }}"
       - name: install
-        run: npm ci
+        run: "npm ci && npm update @flipova/languages @flipova/assets"
       # format: skipped: no format command for this project
       - name: lint
         run: npm run lint
@@ -138,7 +138,7 @@ jobs:
         with:
           token: "${{ secrets.ORG_READ_TOKEN }}"
       - name: install
-        run: npm ci
+        run: "npm ci && npm update @flipova/languages @flipova/assets"
       - name: npm recent (trusted publishing needs npm >= 11.5.1)
         run: |
           npm install -g npm@latest

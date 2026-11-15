@@ -13,7 +13,7 @@ steps:
     with:
       token: "${{ secrets.ORG_READ_TOKEN }}"
   install:
-    run: npm ci
+    run: "npm ci && npm update @flipova/languages @flipova/assets"
   format:
     skip: no format command for this project
   lint:
