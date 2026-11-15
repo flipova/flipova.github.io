@@ -1,0 +1,85 @@
+# corral-ci-lib git-auth v1 sha256:db5212f629770584
+name: git-auth
+description: Gives git (and so npm) read access to the private git dependencies of the project.
+inputs:
+  token:
+    description: Token with read access to the private repositories (secret)
+    required: true
+  host:
+    description: Git host
+    default: github.com
+  check:
+    description: owner/repo list (space separated) probed before the install; empty = the git dependencies named by package.json
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Authenticate git to the private dependencies
+      shell: bash
+      env:
+        GIT_AUTH_TOKEN: ${{ inputs.token }}
+        GIT_AUTH_HOST: ${{ inputs.host }}
+        GIT_AUTH_CHECK: ${{ inputs.check }}
+      run: |
+        set -euo pipefail
+        if [ -z "$GIT_AUTH_TOKEN" ]; then
+          echo "::error title=git-auth::no token: the private repositories this project depends on cannot be read (npm would fall back to ssh and fail with \"Permission denied (publickey)\"). Create a fine-grained token with Contents: read on those repositories, store it as the repository secret ORG_READ_TOKEN (corral vault publish github --only ORG_READ_TOKEN --repo-secret), and pass it as the token input of the access step in ci/ci.yml."
+          exit 1
+        fi
+        echo "::add-mask::$GIT_AUTH_TOKEN"
+        host="$GIT_AUTH_HOST"
+        base="https://x-access-token:${GIT_AUTH_TOKEN}@${host}/"
+        # every spelling of the same repository goes through the token: https, ssh://, git+ssh://, scp-like
+        git config --global url."$base".insteadOf "https://${host}/"
+        git config --global --add url."$base".insteadOf "ssh://git@${host}/"
+        git config --global --add url."$base".insteadOf "git+ssh://git@${host}/"
+        git config --global --add url."$base".insteadOf "git@${host}:"
+        git config --global --add url."$base".insteadOf "git://${host}/"
+        # actions/checkout leaves an Authorization header for this host in the repository's git config (the job's own token); git sends
+        # THAT header instead of the credentials of the rewritten url, so every private repository answers "not found". Reset it for
+        # this step and for the next ones (npm ci runs git inside the repository too).
+        n="${GIT_CONFIG_COUNT:-0}"
+        export GIT_CONFIG_COUNT=$((n + 1)) "GIT_CONFIG_KEY_${n}=http.https://${host}/.extraheader" "GIT_CONFIG_VALUE_${n}="
+        if [ -n "${GITHUB_ENV:-}" ]; then
+          { echo "GIT_CONFIG_COUNT=$((n + 1))"; echo "GIT_CONFIG_KEY_${n}=http.https://${host}/.extraheader"; echo "GIT_CONFIG_VALUE_${n}="; } >> "$GITHUB_ENV"
+        fi
+        repos="$GIT_AUTH_CHECK"
+        if [ -z "$repos" ] && [ -f package.json ]; then
+          repos=$(node -e '
+            const p=require("./package.json");
+            const all={...p.dependencies,...p.devDependencies,...p.optionalDependencies};
+            const re=/(?:git\+)?(?:https?|ssh):\/\/(?:git@)?[^/]+\/([^/]+\/[^/#]+?)(?:\.git)?(?:#.*)?$|^github:([^#]+)/;
+            for (const v of Object.values(all)) { const m=re.exec(String(v)); if (m) console.log(m[1]||m[2]); }
+          ' | sort -u | tr '\n' ' ')
+        fi
+        for r in $repos; do
+          if err=$(git ls-remote --exit-code "https://${host}/${r}.git" HEAD 2>&1 >/dev/null); then
+            echo "readable: ${r}"
+          else
+            # say WHY, without ever printing the token: its kind and length, and what the API answers for this repository
+            case "$GIT_AUTH_TOKEN" in
+              github_pat_*) kind="fine-grained personal access token" ;;
+              ghp_*) kind="classic personal access token" ;;
+              ghs_*) kind="GitHub App installation token" ;;
+              gho_*|ghu_*) kind="OAuth token" ;;
+              *) kind="unrecognized format (is it the right secret?)" ;;
+            esac
+            echo "git said: ${err:-nothing (exit code 2: no HEAD to list)}" | head -3
+            echo "the secret holds a ${kind}, ${#GIT_AUTH_TOKEN} characters"
+            case "$GIT_AUTH_TOKEN" in *[[:space:]]*) echo "::warning title=git-auth::the secret contains a space or a line break: it was pasted with extra characters" ;; esac
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H "Authorization: Bearer ${GIT_AUTH_TOKEN}" -H 'Accept: application/vnd.github+json' "${GIT_AUTH_API:-https://api.github.com}/repos/${r}" || true)
+            case "$code" in
+              401) why="GitHub does not accept this token at all (HTTP 401): wrong value in the secret, token regenerated, revoked or expired" ;;
+              403) why="GitHub refuses it for this repository (HTTP 403): the organization may require an owner to approve fine-grained tokens, or the token lacks a permission" ;;
+              404) why="this token does not see the repository (HTTP 404): it is not in the token's repository list, or the organization has not approved the token yet" ;;
+              200)
+                codec=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H "Authorization: Bearer ${GIT_AUTH_TOKEN}" -H 'Accept: application/vnd.github+json' "${GIT_AUTH_API:-https://api.github.com}/repos/${r}/contents/" || true)
+                if [ "$codec" = "200" ]; then why="the token reads the repository and its contents through the API, but git failed (see what git said above: an empty repository has no HEAD to list)"
+                else why="the API shows the repository (it only needs Metadata) but not its contents (HTTP ${codec:-none}): this token lacks Contents: read, it is probably not the token you configured"; fi ;;
+              *) why="api.github.com did not answer clearly (HTTP ${code:-none})" ;;
+            esac
+            echo "${r}: ${why}"
+            echo "::error title=git-auth::the token cannot read ${host}/${r}: ${why}. Give it Contents: read on that repository (fine-grained token) or the repo scope (classic token)"
+            exit 1
+          fi
+        done
