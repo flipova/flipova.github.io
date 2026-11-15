@@ -1,4 +1,4 @@
-# corral-ci-lib git-auth v1 sha256:0baa46e92c8b8c14
+# corral-ci-lib git-auth v1 sha256:db5212f629770584
 name: git-auth
 description: Gives git (and so npm) read access to the private git dependencies of the project.
 inputs:
@@ -35,6 +35,14 @@ runs:
         git config --global --add url."$base".insteadOf "git+ssh://git@${host}/"
         git config --global --add url."$base".insteadOf "git@${host}:"
         git config --global --add url."$base".insteadOf "git://${host}/"
+        # actions/checkout leaves an Authorization header for this host in the repository's git config (the job's own token); git sends
+        # THAT header instead of the credentials of the rewritten url, so every private repository answers "not found". Reset it for
+        # this step and for the next ones (npm ci runs git inside the repository too).
+        n="${GIT_CONFIG_COUNT:-0}"
+        export GIT_CONFIG_COUNT=$((n + 1)) "GIT_CONFIG_KEY_${n}=http.https://${host}/.extraheader" "GIT_CONFIG_VALUE_${n}="
+        if [ -n "${GITHUB_ENV:-}" ]; then
+          { echo "GIT_CONFIG_COUNT=$((n + 1))"; echo "GIT_CONFIG_KEY_${n}=http.https://${host}/.extraheader"; echo "GIT_CONFIG_VALUE_${n}="; } >> "$GITHUB_ENV"
+        fi
         repos="$GIT_AUTH_CHECK"
         if [ -z "$repos" ] && [ -f package.json ]; then
           repos=$(node -e '
