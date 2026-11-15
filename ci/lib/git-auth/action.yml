@@ -1,4 +1,4 @@
-# corral-ci-lib git-auth v1 sha256:4275a80bba6f7370
+# corral-ci-lib git-auth v1 sha256:0baa46e92c8b8c14
 name: git-auth
 description: Gives git (and so npm) read access to the private git dependencies of the project.
 inputs:
@@ -45,7 +45,7 @@ runs:
           ' | sort -u | tr '\n' ' ')
         fi
         for r in $repos; do
-          if git ls-remote --exit-code "https://${host}/${r}.git" HEAD >/dev/null 2>&1; then
+          if err=$(git ls-remote --exit-code "https://${host}/${r}.git" HEAD 2>&1 >/dev/null); then
             echo "readable: ${r}"
           else
             # say WHY, without ever printing the token: its kind and length, and what the API answers for this repository
@@ -56,6 +56,7 @@ runs:
               gho_*|ghu_*) kind="OAuth token" ;;
               *) kind="unrecognized format (is it the right secret?)" ;;
             esac
+            echo "git said: ${err:-nothing (exit code 2: no HEAD to list)}" | head -3
             echo "the secret holds a ${kind}, ${#GIT_AUTH_TOKEN} characters"
             case "$GIT_AUTH_TOKEN" in *[[:space:]]*) echo "::warning title=git-auth::the secret contains a space or a line break: it was pasted with extra characters" ;; esac
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H "Authorization: Bearer ${GIT_AUTH_TOKEN}" -H 'Accept: application/vnd.github+json' "${GIT_AUTH_API:-https://api.github.com}/repos/${r}" || true)
@@ -63,7 +64,10 @@ runs:
               401) why="GitHub does not accept this token at all (HTTP 401): wrong value in the secret, token regenerated, revoked or expired" ;;
               403) why="GitHub refuses it for this repository (HTTP 403): the organization may require an owner to approve fine-grained tokens, or the token lacks a permission" ;;
               404) why="this token does not see the repository (HTTP 404): it is not in the token's repository list, or the organization has not approved the token yet" ;;
-              200) why="the API shows the repository, but git cannot clone it: the token lacks Contents: read" ;;
+              200)
+                codec=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H "Authorization: Bearer ${GIT_AUTH_TOKEN}" -H 'Accept: application/vnd.github+json' "${GIT_AUTH_API:-https://api.github.com}/repos/${r}/contents/" || true)
+                if [ "$codec" = "200" ]; then why="the token reads the repository and its contents through the API, but git failed (see what git said above: an empty repository has no HEAD to list)"
+                else why="the API shows the repository (it only needs Metadata) but not its contents (HTTP ${codec:-none}): this token lacks Contents: read, it is probably not the token you configured"; fi ;;
               *) why="api.github.com did not answer clearly (HTTP ${code:-none})" ;;
             esac
             echo "${r}: ${why}"
