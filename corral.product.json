@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "flipova.github.io",
+  "name": "flipova.github.io",
+  "description": "Portail développeur de Flipova (https://flipova.github.io) : quelle brique installer, où lire sa documentation, où trouver le code, et la marque telle que les projets la lisent.",
+  "type": "app",
+  "stack": [
+    "react",
+    "vite",
+    "javascript"
+  ],
+  "version": "1.0.0",
+  "channel": "stable",
+  "license": "MIT",
+  "lifecycle": "active",
+  "owners": [],
+  "links": {
+    "docs": "https://flipova.github.io/",
+    "support": "https://github.com/flipova/flipova.github.io/blob/main/.github/SUPPORT.md",
+    "tracker": "https://github.com/flipova/flipova.github.io/issues"
+  },
+  "dependencies": [],
+  "deliverables": [],
+  "environments": [
+    "dev",
+    "staging",
+    "prod"
+  ],
+  "compliance": {
+    "license": "MIT",
+    "sbom": false
+  }
+}

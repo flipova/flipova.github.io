@@ -25,12 +25,12 @@ corral vault gen --repo flipova.github.io --all
 
 ## Variables this repository needs
 
-| Key | Scope | Environments | Kind |
-| --- | --- | --- | --- |
-| _none recorded yet_ | — | — | — |
+None. The site is static, public and built from the repository: no variable differs between `dev`, `staging`
+and `production`, and nothing here is secret. The vault has nothing to publish for it.
 
-Environments: dev, staging, prod. A key scoped to *this repo* wins over a *shared* one
-of the same name.
+The pipeline needs one **secret of the organization**, not a value of the vault: `ORG_READ_TOKEN`, a read-only
+token that lets the runner install `@flipova/assets` and `@flipova/languages`, which are private git dependencies.
+
 
 ## Manage them
 

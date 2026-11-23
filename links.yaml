@@ -1,29 +1,36 @@
-name: Flipova Developers
-tagline: Tous les outils pour construire avec Flipova
+# What the portal shows: only what is public. An open source project, a public site or service, nothing else.
+# The words (names, summaries, titles) live in @flipova/languages, surface `developers`, under projects.<id> and
+# services.<id>; `npm test` fails when an entry has no text in a language, an address is not https, or a repository is
+# not in the flipova organization.
+#
+# To add a project: a block under `projects`, then its name and summary in the dictionaries.
+# To add a service (an API key page, the ML endpoint, a public tool...): a block under `services`, then its texts.
+#
+#   install   the command shown and copied on the page
+#   docs      the documentation site, when there is one
+#   releases  the GitHub repository whose releases the page lists
+site:
+  url: https://flipova.github.io
+  source: https://github.com/flipova/flipova.github.io
+  license: https://github.com/flipova/flipova.github.io/blob/main/LICENSE
 
-links:
-  - label: Foundation - Design System
-    description: Composants React Native, 9 thèmes, 23 layouts
-    url: https://dev.flipova.fr/foundation
-    icon: foundation
-    highlight: true
+hero:
+  project: foundation
 
-  - label: Documentation
-    description: Guides, API reference, exemples
-    url: https://dev.flipova.fr
-    icon: book
+projects:
+  - id: foundation
+    package: "@flipova/foundation"
+    install: npm install @flipova/foundation
+    docs: https://flipova.github.io/foundation/
+    source: https://github.com/flipova/foundation
+    npm: https://www.npmjs.com/package/@flipova/foundation
+    releases: flipova/foundation
+  # Corral joins this list once its public version exists.
 
-  - label: GitHub
-    description: Code source, issues, contributions
-    url: https://github.com/flipova/foundation
-    icon: github
-
-  - label: Flippa AI
-    description: Assistant IA pour développeurs — bêta
-    url: https://flipova.fr/flippa
-    icon: sparkle
-
-  - label: flipova.fr
-    description: Site principal
+services:
+  - id: website
     url: https://flipova.fr
-    icon: globe
+  - id: flippa
+    url: https://flipova.fr/flippa
+  - id: github
+    url: https://github.com/flipova
