@@ -1,4 +1,4 @@
-# corral-ci-lib git-auth v1 sha256:db5212f629770584
+# corral-ci-lib git-auth v2 sha256:fe15f2067c473ecd
 name: git-auth
 description: Gives git (and so npm) read access to the private git dependencies of the project.
 inputs:
@@ -22,6 +22,10 @@ runs:
         GIT_AUTH_CHECK: ${{ inputs.check }}
       run: |
         set -euo pipefail
+        if [ -z "$GIT_AUTH_TOKEN" ] && [ "${GITHUB_ACTOR:-}" = "dependabot[bot]" ]; then
+          echo "::error title=git-auth::this pull request was opened by Dependabot, which reads Dependabot secrets only, not the repository secrets. Store the token there too: corral vault publish github --env prod --only ORG_READ_TOKEN --repo-secret --dependabot --repo <repo>"
+          exit 1
+        fi
         if [ -z "$GIT_AUTH_TOKEN" ]; then
           echo "::error title=git-auth::no token: the private repositories this project depends on cannot be read (npm would fall back to ssh and fail with \"Permission denied (publickey)\"). Create a fine-grained token with Contents: read on those repositories, store it as the repository secret ORG_READ_TOKEN (corral vault publish github --only ORG_READ_TOKEN --repo-secret), and pass it as the token input of the access step in ci/ci.yml."
           exit 1
