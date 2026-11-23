@@ -1,6 +1,13 @@
 version: 2
+registries:
+  github-private:
+    type: git
+    url: https://github.com
+    username: x-access-token
+    password: ${{secrets.ORG_READ_TOKEN}}
 updates:
   - package-ecosystem: npm
+    registries: [github-private]
     directory: /
     schedule:
       interval: weekly
